@@ -1,0 +1,33 @@
+application: sis-msr
+version: crawler
+runtime: python27
+api_version: 1
+threadsafe: true
+
+handlers:
+-  url: /favicon.ico
+   static_files: media/img/favicon.ico
+   upload: media/img/favicon.ico
+
+-  url: /apple-touch-icon.png
+   static_files: media/img/apple-touch-icon.png
+   upload: media/img/apple-touch-icon.png
+
+-  url: /apple-touch-icon-precomposed.png
+   static_files: media/img/apple-touch-icon-precomposed.png
+   upload: media/img/apple-touch-icon-precomposed.png
+
+-  url: /apple-touch-icon-120x120.png
+   static_files: media/img/apple-touch-icon-120x120.png
+   upload: media/img/apple-touch-icon-120x120.png
+
+-  url: /apple-touch-icon-120x120-precomposed.png
+   static_files: media/img/apple-touch-icon-120x120-precomposed.png
+   upload: media/img/apple-touch-icon-120x120-precomposed.png
+
+-  url: /robots.txt
+   static_files: robots.txt
+   upload: robots.txt
+
+-  url: /.*
+   script: sismsr.app
