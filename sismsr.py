@@ -124,7 +124,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 		result_type = self.request.get("type")
 		usn = self.request.get("usn")
 		usn = usn.upper()
-		usn_valid = re.compile("(^1MS\d{2}\w{2}\d{3}$)")
+		usn_valid = re.compile("(^1MS\d{2}\w{2,3}\d{2,3}$)")
 		logging.info("USN: " + str(usn))
 		self.response.headers['Content-Type'] = 'application/json'
 		if(re.search(usn_valid,usn)):
@@ -133,7 +133,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 			log = "Invalid USN"
 			logging.warning(log)
 			# code Invalid USN
-			code = {"code" : 2}
+			code = {"code" : 2, "desc" : "Invalid USN"}
 			final_json = json.dumps(code)
 			self.response.headers['Content-Type'] = 'application/json'
 			self.response.out.write(final_json)
@@ -192,7 +192,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 
 		else:
 			status_code = rdata.status_code
-			code = {"code" : status_code, "desc":"HTTP Error ("+status_code+")"}
+			code = {"code" : status_code, "desc":"HTTP Error ("+str(status_code)+")"}
 			final_json = json.dumps(code)
 			self.response.out.write(final_json)
 
@@ -373,9 +373,11 @@ class MSRITResult():
 		out_details_json = json.loads(details_json)
 		out_sub_json = json.loads(sub_json)
 		
+		desc = "success"
+
 		# output as JSON
 		if(result_type == "1"):
-			out_json = {"gpa":out_gpa_json,"details":out_details_json,"subjects":out_sub_json,"code":200}
+			out_json = {"gpa":out_gpa_json,"details":out_details_json,"subjects":out_sub_json,"code":200,"desc":desc}
 		else:
 			out_json = {"details":out_details_json,"subjects":out_sub_json,"code":200}
 		final_json = json.dumps(out_json)
