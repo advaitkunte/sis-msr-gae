@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 
 start_html = """
 	<html>
-			<title> Alpha MSRIT SIS 7</title>
+			<title> Alpha MSRIT SIS 8</title>
 		</head>
 		<body>
 """
@@ -96,7 +96,7 @@ results_html = """
 		<label for = "usn"> USN: </label>
 		<input name = "usn" type = "text" autofocus><br>
 
-		<input type="radio" name="type" value="1">Main<br>
+		<input type="radio" name="type" value="1" checked='checked' autocomplete="off">Main<br>
 		<input type="radio" name="type" value="2">Reval<br>
 		<input type="radio" name="type" value="3">Makeup<br>
 		<input type="radio" name="type" value="4">Makeup Reval<br>
@@ -113,7 +113,7 @@ class MainHtml(webapp2.RequestHandler):
 		self.response.out.write(start_html+maintenance+changelog_html+bugs_html+credits_html+end_html)
 
 	def post(self):
-		pass
+		self.response.out.write(start_html+maintenance+d+changelog_html+bugs_html+credits_html+end_html)
 
 class ResultMSRIT(webapp2.RequestHandler):
 
@@ -265,6 +265,7 @@ class MSRITResult():
 		subs = []
 		for row in table.findAll('tr'):
 			col = row.findAll('td')
+			# Main result
 			if(len(col)==5 and result_type == "1"):
 				try:
 					num_rows = num_rows + 1
@@ -296,6 +297,8 @@ class MSRITResult():
 					logging.warning(log)
 					log = traceback.format_exc()
 					logging.warning(log)
+			
+			# Main/Makeup Reval
 			elif(len(col)==4 and (result_type == "2" or result_type == "4")):
 				try:
 					num_rows = num_rows + 1
@@ -324,6 +327,7 @@ class MSRITResult():
 					log = traceback.format_exc()
 					logging.warning(log)
 			
+			# Makeup
 			elif(len(col)==4 and result_type == "3"):
 				try:
 					num_rows = num_rows + 1
@@ -355,7 +359,7 @@ class MSRITResult():
 		
 		sub_json = json.dumps(subs)
 
-		# To find SGPA and CGPA
+		# To find SGPA and CGPA for only Main Result
 		if(result_type == "1"):
 			num_rows = num_rows + 2
 			rows = table.findAll('tr')
@@ -379,7 +383,7 @@ class MSRITResult():
 		if(result_type == "1"):
 			out_json = {"gpa":out_gpa_json,"details":out_details_json,"subjects":out_sub_json,"code":200,"desc":desc}
 		else:
-			out_json = {"details":out_details_json,"subjects":out_sub_json,"code":200}
+			out_json = {"details":out_details_json,"subjects":out_sub_json,"code":200,"desc":desc}
 		final_json = json.dumps(out_json)
 		return final_json
 
