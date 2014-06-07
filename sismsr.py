@@ -124,7 +124,9 @@ class ResultMSRIT(webapp2.RequestHandler):
 		result_type = self.request.get("type")
 		usn = self.request.get("usn")
 		usn = usn.upper()
-		usn_valid = re.compile("(^1MS\d{2}\w{2,3}\d{2,3}$)")
+		usn = usn.replace(" ", "")
+		# usn_valid = re.compile("(^1MS\d{2}\w{2,3}\d{2,3}$)")
+		usn_valid = re.compile("(^1M[S|Y]\d{2}\w{2,3}\d{2,3}$)")
 		logging.info("USN: " + str(usn))
 		self.response.headers['Content-Type'] = 'application/json'
 		if(re.search(usn_valid,usn)):
@@ -133,7 +135,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 			log = "Invalid USN"
 			logging.warning(log)
 			# code Invalid USN
-			code = {"code" : 2, "desc" : "Invalid USN"}
+			code = {"code" : 2, "desc" : "Invalid USN\nContact advait [at] msrit {dot} edu if your USN is correct"}
 			final_json = json.dumps(code)
 			self.response.headers['Content-Type'] = 'application/json'
 			self.response.out.write(final_json)
@@ -159,11 +161,11 @@ class ResultMSRIT(webapp2.RequestHandler):
 									deadline = 30)
 		except Exception as e:
 			log = "HTTP error"
-			logging.error(log)
+			logging.warning(log)
 			log = traceback.format_exc()
 			logging.warning(log)
 			# code HTTP error
-			code = {"code" : 1, "desc":"HTTP error" + str(e)}
+			code = {"code" : 1, "desc":"HTTP error - " + str(e)}
 			final_json = json.dumps(code)
 			self.response.out.write(final_json)
 			return
