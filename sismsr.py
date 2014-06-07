@@ -166,6 +166,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 			code = {"code" : 1, "desc":"HTTP error" + str(e)}
 			final_json = json.dumps(code)
 			self.response.out.write(final_json)
+			return
 
 
 		if rdata.status_code == 200:
