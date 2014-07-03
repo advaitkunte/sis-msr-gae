@@ -107,6 +107,7 @@ results_html = """
 
 key_string = ""
 
+
 class MainHtml(webapp2.RequestHandler):
 
 	def get(self):
@@ -348,9 +349,9 @@ class MSRITResult():
 						data["credits"] = ""
 
 					if(col[3].string is not None):
-						data["new_grade"] = col[3].string.strip()
+						data["grade"] = col[3].string.strip()
 					else:
-						data["new_grade"] = ""
+						data["grade"] = ""
 
 					subs.append(data)
 				except Exception as e:
