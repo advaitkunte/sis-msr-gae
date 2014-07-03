@@ -151,10 +151,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 		elif(result_type == "4"):
 			url_end = "makeup_grvresult.php?myusn="
 
-
 		url = "http://result.msrit.edu/" + url_end + str(usn)
-		
-		logging.info("Result type = "+result_type + "\nURL "+ url)
 
 		try:
 			rdata = urlfetch.fetch( url = url, 
@@ -174,7 +171,7 @@ class ResultMSRIT(webapp2.RequestHandler):
 
 		if rdata.status_code == 200:
 			d = MSRITResult()
-			logging.info("Result type = "+result_type + "\nURL "+ url_end)
+			logging.info("HTTP returned success")
 
 			if(result_type == "1"):
 				logging.info("main")
@@ -195,6 +192,8 @@ class ResultMSRIT(webapp2.RequestHandler):
 			self.response.out.write(final_json)
 
 		else:
+			log = "HTTP warning"
+			logging.error(log + "\tStatus code : " + rdata.status_code)
 			status_code = rdata.status_code
 			code = {"code" : status_code, "desc":"HTTP Error ("+str(status_code)+")"}
 			final_json = json.dumps(code)
@@ -228,6 +227,8 @@ class MSRITResult():
 			name = string.capwords(headers[0][7:])
 			if(len(name) == 0):
 				# null data
+				log = "No result or invalid USN"
+				logging.info(log)
 				code = {"code" : 0, "desc":"No result or invalid USN"}
 				final_json = json.dumps(code)
 				return final_json
@@ -297,7 +298,7 @@ class MSRITResult():
 
 					subs.append(data)
 				except Exception as e:
-					log = "Error at finding subject details"
+					log = "Error at finding subject details at main result"
 					logging.warning(log)
 					log = traceback.format_exc()
 					logging.warning(log)
@@ -326,7 +327,7 @@ class MSRITResult():
 
 					subs.append(data)
 				except Exception as e:
-					log = "Error at finding subject details"
+					log = "Error at finding subject details at main/makeup reval"
 					logging.warning(log)
 					log = traceback.format_exc()
 					logging.warning(log)
@@ -355,7 +356,7 @@ class MSRITResult():
 
 					subs.append(data)
 				except Exception as e:
-					log = "Error at finding subject details"
+					log = "Error at finding subject details at Makeup"
 					logging.warning(log)
 					log = traceback.format_exc()
 					logging.warning(log)
