@@ -31,3 +31,7 @@ handlers:
 
 -  url: /.*
    script: sismsr.app
+
+libraries:
+- name: lxml
+  version: latest

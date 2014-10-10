@@ -75,7 +75,7 @@ credits_html = """
 """
 
 results_html = """
-<form action = "/result" method = "post">
+    <form action = "/result" method = "post">
         <label for = "usn"> USN: </label>
         <input name = "usn" type = "text" autofocus><br>
 
@@ -85,11 +85,11 @@ results_html = """
         <input type="radio" name="type" value="4">Makeup Reval<br>
         
         <input name = "" type = "submit" value = "Submit"><br>
-</form>
+    </form>
 """
 
 sis_html = """
-<form action = "/sis" method = "post">
+    <form action = "/sis" method = "post">
         <label for = "usn"> USN: </label>
         <input name = "usn" type = "text" autofocus><br>
 
@@ -97,11 +97,8 @@ sis_html = """
         <input name = "password" type = "password"><br>
         
         <input type = "submit" value = "Submit"><br>
-</form>
+    </form>
 """
-
-key_string = ""
-
 
 class MainHtml(webapp2.RequestHandler):
 
@@ -409,7 +406,6 @@ class SISMSRIT(webapp2.RequestHandler):
             # code Invalid USN
             code = {"status" : 2, "desc" : "Invalid USN\nOnly support Engg USN for now\nContact advait [at] msrit {dot} edu if your USN is correct"}
             final_json = json.dumps(code)
-            self.response.headers['Content-Type'] = 'application/json'
             self.response.out.write(final_json)
             return
 
@@ -418,13 +414,22 @@ class SISMSRIT(webapp2.RequestHandler):
         d.result['status'] = d.status
         d.result['desc'] = d.desc
         self.response.out.write(json.dumps(d.result))
+        del d
 
 class MSRITSIS():
 
     status = 0
     desc = 'Unknown error'
-    subs = []
-    result = {'sis':subs,'tt':subs}
+    result = {}
+
+    def __init__(self):
+        self.status = 0
+        self.desc = 'Unknown error'
+        self.result = {}
+
+    def __del__(self):
+      class_name = self.__class__.__name__
+      self.result = {}
 
     def init(self,username,password):
         import random
@@ -445,6 +450,9 @@ class MSRITSIS():
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'User-Agent' : user_agent
                         }
+
+            # STEP 1
+            logging.info('step1: getting values and cookie')
             response = urlfetch.fetch(  url = url, 
                                         follow_redirects = False, 
                                         headers= headers,
@@ -452,9 +460,16 @@ class MSRITSIS():
 
             cookie = response.headers.get('set-cookie')
 
+            if not response.status_code == 200:
+                self.status = response.status_code
+                self.desc = 'HTTP Error %d to SIS server\nUnable to connect to SIS server' % (self.status)
+                logging.warning(self.desc)
+                return
+
             if 'We are currently performing maintenance' in response.content:
                 self.status = 110
                 self.desc = 'SIS site under maintainance'
+                logging.warning(self.desc)
                 return
 
             token = []
@@ -501,25 +516,43 @@ class MSRITSIS():
                       token[0] : token[1]
                       }
             data = urllib.urlencode(values)
-            # getting login cookie
-            # response = opener.open(url, data)
             headers['Cookie'] = cookie
+            
+
+
+            # STEP 2
+            logging.info('step2: logging in')
             response = urlfetch.fetch(  url = url, 
                                         payload = data, 
                                         method = urlfetch.POST,
                                         follow_redirects = False, 
                                         headers= headers,
                                         deadline = 10)
+            if not response.status_code == 303:
+                self.status = response.status_code
+                self.desc = 'HTTP Error %d to SIS server\nUnable to connect to SIS server' % (self.status)
+                return
             headers['Cookie'] = response.headers.get('set-cookie')
             url = response.headers.get('location')
+
+
+
+            # STEP 3
+            logging.info('step3: getting html source')
             response = urlfetch.fetch(  url = url,
                                         follow_redirects = False, 
                                         headers= headers,
                                         deadline = 10)
+            if not response.status_code == 200:
+                self.status = response.status_code
+                self.desc = 'HTTP Error %d to SIS server\nUnable to connect to SIS server' % (self.status)
+                logging.warning(self.desc)
+                return
 
             if url == 'http://parents.msrit.edu/index.php':
                 self.status = 1
                 self.desc = 'Invalid Username / Password'
+                logging.info(self.desc)
                 return
 
             self.status = 200
@@ -535,84 +568,103 @@ class MSRITSIS():
 
     def process_data(self,html_source):
         # for today's timetable
+        logging.info('processing data')
         def timetable(row):
             subs = []
-            try: 
-                date = row[1].string.replace('Timetable','').strip()
-                if not str(row[2]).find('No Classes Scheduled today!') > 0:
-                    for timetable in row[2].findAll('li'):
-                        data = {}
-                        data['name'] = timetable.find('div',{'class':'first'}).string.strip()
-                        x = timetable.find('div',{'class':'second'}).findAll('div',{'class':'right-bottom'})
-                        data['room'] = x[1].string.strip()
-                        xx = timetable.find('div',{'class':'left'}).findAll('td')
-                        data['time'] = xx[0].string
-                        data['code'] = xx[1].string
-                        data['duration'] = xx[2].string
-                        xy = x[0].string.strip().split('-')
-                        data['semester'] = xy[0].replace('Semester','').strip()
-                        data['section'] = xy[1].replace('Section','').strip()
-                        subs.append(data)
+            date = ''
+            try:
+                date = table.findAll('tr')[1].string.replace('Timetable','').strip()
+                tt_subs = table.find('ul',{'id':'accordion1'}).findAll('li')
+                if str(table.findAll('tr')[2]).find('No Classes Scheduled today!') > 0:
+                    data = {'subjects':subs,'date':date}
+                    return data
+                for sub in tt_subs:
+                    sub = sub.find('div',{'class':'sliderslider'})
+                    data = {}
+                    data['time'] = sub.find('td',{'class':'left-top'}).string.strip()
+                    data['code'] = sub.find('td',{'class':'left-middle'}).string.strip()
+                    data['duration'] = sub.find('td',{'class':'left-bottom'}).string.strip()
+                    data['name'] = sub.find('div',{'class':'first'}).string.strip()
+                    x = sub.findAll('div',{'class':'right-bottom'})
+                    data['room'] = x[1].string.strip()
+                    data['semester'] = int(x[0].string.split('-')[0].replace('Semester','').strip())
+                    data['section'] = x[0].string.split('-')[1].replace('Section','').strip()
+                    subs.append(data)
+                data = {'subjects':subs,'date':date}
+                return data
             except Exception as e:
                 log = str(e)
-                logging.error(log)
+                logging.warning(log)
                 self.desc = 'Parsing error for timetable'
                 self.status = 2
-            return subs
+                data = {'subjects':subs,'date':date}
+                log = traceback.format_exc()
+                logging.warning(log)   
+                return data
 
         def details(table):
             subs = []
             for tab in table.findAll('div',{'class':'big_container'}):
-                data = {}
-                basic = tab.find('table').findAll('td')
-                
-                # basic
-                data['sub_code'] = basic[0].string.strip()
-                data['sub_name'] = basic[1].string.strip()
-                
-                # 
-                attendance = tab.find('div',{'class':'boxmiddle'}).findAll('tr')
-                marks = tab.find('div',{'class':'boxright'}).findAll('tr')
-                details = tab.find('div',{'class':'boxleft'}).findAll('tr')
-                
-                # attendance
-                data['percentage'] = attendance[2].string.strip()
-                if attendance[4].findAll('span')[0].string:
-                    data['attended'] = int(attendance[4].findAll('span')[0].string)
-                else:
-                    data['attended'] = 0
-                
-                if attendance[4].findAll('span')[1].string:
-                    data['conducted'] = int(attendance[4].findAll('span')[1].string)
-                else:
-                    data['conducted'] = 0
-                
-                # details
-                data['credits'] = details[4].string.strip()
-                data['type'] = details[6].string.strip()
-                data['nature'] = details[8].string.strip()
-                data['cie_max'] = float("%0.2f" % float(details[10].string.strip()))
-                data['see_max'] = float("%0.2f" % float(details[12].string.strip()))
+                try:
+                    data = {}
+                    basic = tab.find('table').findAll('td')
+                    
+                    # basic
+                    data['sub_code'] = basic[0].string.strip()
+                    data['sub_name'] = basic[1].string.strip()
+                    if basic[2].string:
+                        data['batch'] = basic[2].string.strip()
+                    else:
+                        data['batch'] = ''
+                    
+                    # 
+                    attendance = tab.find('div',{'class':'boxmiddle'}).findAll('tr')
+                    marks = tab.find('div',{'class':'boxright'}).findAll('tr')
+                    details = tab.find('div',{'class':'boxleft'}).findAll('tr')
+                    
+                    # attendance
+                    data['percentage'] = attendance[2].string.strip()
+                    if attendance[4].findAll('span')[0].string:
+                        data['attended'] = int(attendance[4].findAll('span')[0].string)
+                    else:
+                        data['attended'] = 0
+                    
+                    if attendance[4].findAll('span')[1].string:
+                        data['conducted'] = int(attendance[4].findAll('span')[1].string)
+                    else:
+                        data['conducted'] = 0
+                    
+                    # details
+                    data['credits'] = details[4].string.strip()
+                    data['type'] = details[6].string.strip()
+                    data['nature'] = details[8].string.strip()
+                    data['cie_max'] = float("%0.2f" % float(details[10].string.strip()))
+                    data['see_max'] = float("%0.2f" % float(details[12].string.strip()))
 
 
-                # CIE marks
-                if len(marks) < 3:
-                    data['T1'] = float("%0.2f" % float(-1))
-                    data['T2'] = float("%0.2f" % float(-1))
-                    data['T3'] = float("%0.2f" % float(-1))
-                else:
-                    # TODO 
-                    pass
-                subs.append(data)
+                    # CIE marks
+                    if len(marks) < 3:
+                        data['T1'] = float("%0.2f" % float(-1))
+                        data['T2'] = float("%0.2f" % float(-1))
+                        data['T3'] = float("%0.2f" % float(-1))
+                    else:
+                        # TODO 
+                        pass
+                    subs.append(data)
+                except Exception, e:
+                    log = str(e)
+                    logging.warning(log+'\nParsing error at details()')
+                    log = traceback.format_exc()
+                    logging.warning(log)
             return subs
 
         try:
-            bs = BeautifulSoup(html_source)
+            bs = BeautifulSoup(html_source,"lxml")
             table = bs.find("td",{'width':'60%','style':'vertical-align:top;padding:0px 5px 0px 5px;border-right:1px dashed black'})
             # table = bs.find('div',{'id':'left-column'}).find('table',{'width':'980px'}).findAll('tr')[2].find('td',{'style':'vertical-align:top;padding:0px 5px 0px 5px;border-right:1px dashed black'})
             row = table.findAll('tr')
             self.result['tt'] = timetable(row)
-            # self.result['sis'] = details(table)
+            self.result['sis'] = details(table)
         except Exception, e:
             self.status = 101
             self.desc = 'Parse error'
