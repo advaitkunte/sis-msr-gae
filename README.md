@@ -9,4 +9,3 @@ TODO
 * Allow login via cookie
 * Scrape marks data
 * logout implementation 
-* 
