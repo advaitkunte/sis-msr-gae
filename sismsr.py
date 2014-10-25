@@ -467,7 +467,7 @@ class MSRITSIS():
                 return
 
             if 'We are currently performing maintenance' in response.content:
-                self.status = 110
+                self.status = 503
                 self.desc = 'SIS site under maintainance'
                 logging.warning(self.desc)
                 return
@@ -560,7 +560,7 @@ class MSRITSIS():
             self.process_data(response.content)
 
         except Exception as e:
-            self.status = 100
+            self.status = 500
             self.desc = 'Connection to SIS error\n' + str(e)
             logging.warning(str(e))
             log = traceback.format_exc()
