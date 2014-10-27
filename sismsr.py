@@ -282,7 +282,7 @@ class SISMSRITCookie(webapp2.RequestHandler):
 
     def post(self):
         cookie = self.request.get("cookie")
-        logging.info("Cookie: " + str(cookie))
+        # logging.info("Cookie: " + str(cookie))
         self.response.headers['Content-Type'] = 'application/json'
         
         d = sis.MSRITSIS()

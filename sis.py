@@ -113,7 +113,7 @@ class MSRITSIS():
                                         deadline = 10)
             self.headers['Cookie'] = response.headers.get('set-cookie')
             self.url = response.headers.get('location')
-            logging.info(self.headers['Cookie'])
+            # logging.info(self.headers['Cookie'])
             if self.url == 'http://parents.msrit.edu/index.php':
                 self.status = 1
                 self.desc = 'Invalid Username / Password'
@@ -137,7 +137,14 @@ class MSRITSIS():
             url_ = 'http://parents.msrit.edu/index.php?option=com_studentdashboard&controller=studentdashboard&task=dashboard'
             logging.info('step3: getting html source')
             self.headers['Cookie'] = str(cookie)
-            logging.info(self.headers)
+            cookie_valid = re.compile("(^[a-z0-9]{32}=[a-z0-9]{32}; path=/$)")
+            if not (re.search(cookie_valid,self.headers['Cookie'])):
+                self.status = 1
+                self.desc = 'Invalid Cookie'
+                logging.warning(self.desc)
+                return
+            # logging.info(self.headers)
+            
             response = urlfetch.fetch(  url = url_,
                                         follow_redirects = False, 
                                         headers= self.headers,
