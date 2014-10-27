@@ -166,9 +166,9 @@ class MSRITSIS():
 
 
     def init(self,username,password):
-        cookie = self.login(username,password)
+        self.login(username,password)
         if(self.status==200):
-            self.get_data(cookie)
+            self.get_data(self.headers['Cookie'])
 
     def process_data(self,html_source):
         # for today's timetable
