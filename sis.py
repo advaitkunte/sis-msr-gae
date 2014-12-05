@@ -252,14 +252,13 @@ class MSRITSIS():
                     data['cie_max'] = float("%0.2f" % float(details[10].string.strip()))
                     data['see_max'] = float("%0.2f" % float(details[12].string.strip()))
                     cie = []
-                    for x in range(0,(len(marks)-2)/4):
+                    for x in range(0,((len(marks)-3)/4)):
                         dat = {}
-                        if x > 0:
-                            x = x-1
-                        dat['name'] = marks[x+1].findAll('td')[0].string.strip()
-                        dat['entered'] = marks[x+1].findAll('td')[1].string.strip().replace("Marks Entered on ","")
-                        dat['max'] = float("%0.2f" % float(marks[x+3].findAll('td')[2].string.strip()))
-                        dat['obtained'] = float("%0.2f" % float(marks[x+3].findAll('td')[4].string.strip()))
+                        dat['name'] = marks[1+4*x].findAll('td')[0].string.strip()
+                        dat['entered'] = marks[1+4*x].findAll('td')[1].string.strip().replace("Marks Entered on ","")
+                        # print marks[3+4*x].findAll('td')[2].string
+                        dat['max'] = float("%0.2f" % float(marks[3+4*x].findAll('td')[2].string.strip()))
+                        dat['obtained'] = float("%0.2f" % float(marks[3+4*x].findAll('td')[4].string.strip()))
                         cie.append(dat)
                     data['cie'] = cie
                     subs.append(data)
